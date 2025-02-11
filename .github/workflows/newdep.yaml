@@ -39,7 +39,7 @@ jobs:
 
     - name: Trigger Infra Repo Deployment
       run: |
-        curl -X POST -u "your-github-username:${{ secrets.GIT_TOKEN }}" \
+        curl -X POST -u "deva9017:${{ secrets.GIT_TOKEN }}" \
         -H "Accept: application/vnd.github.v3+json" \
         https://api.github.com/repos/deva9017/infra-repo/actions/workflows/deploy.yml/dispatches \
         -d '{"ref":"${{ github.ref_name }}"}'
