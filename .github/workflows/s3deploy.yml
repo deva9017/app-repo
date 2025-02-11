@@ -1,0 +1,45 @@
+name: Build and Upload Lambda
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+env:
+  AWS_REGION: ap-south-1
+  S3_BUCKET: lambda-code-bucket19
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Zip Utility
+      run: sudo apt-get install zip -y
+
+    - name: Create Lambda Zip
+      run: zip lambda_function.zip index.js
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Upload ZIP to S3
+      run: aws s3 cp lambda_function.zip s3://${{ env.S3_BUCKET }}/lambda_function.zip
+
+    - name: Trigger Infra Repo Deployment
+      run: |
+        curl -X POST -u "your-github-username:${{ secrets.GITHUB_TOKEN }}" \
+        -H "Accept: application/vnd.github.v3+json" \
+        https://api.github.com/repos/deva9017/infra-repo/actions/workflows/deploy.yml/dispatches \
+        -d '{"ref":"main"}'
