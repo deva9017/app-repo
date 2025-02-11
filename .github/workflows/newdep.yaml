@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: ap-south-1
-  S3_BUCKET: lambda-code-bucket19-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  S3_BUCKET: lambda-code-bucket19-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }} 
 
 permissions:
   id-token: write
