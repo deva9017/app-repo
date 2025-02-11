@@ -1,0 +1,46 @@
+name: "Destroy Lambda and S3 Bucket"
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-destroy-from-infra-repo]
+
+env:
+  AWS_REGION: ap-south-1
+  ENV_NAME: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  S3_BUCKET: lambda-code-bucket19-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  LAMBDA_FUNCTION_NAME: hello-world-lambda-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  destroy-lambda-s3:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Delete Lambda Function (If Exists)
+      continue-on-error: true
+      run: |
+        aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_NAME }} && \
+        aws lambda delete-function --function-name ${{ env.LAMBDA_FUNCTION_NAME }} || echo "Lambda function does not exist."
+
+    - name: Empty and Delete S3 Bucket (If Exists)
+      continue-on-error: true
+      run: |
+        if aws s3api head-bucket --bucket ${{ env.S3_BUCKET }} 2>/dev/null; then
+          aws s3 rm s3://${{ env.S3_BUCKET }} --recursive
+          aws s3api delete-bucket --bucket ${{ env.S3_BUCKET }} --region ${{ env.AWS_REGION }}
+        else
+          echo "S3 bucket does not exist."
+        fi
